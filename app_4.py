@@ -5,13 +5,15 @@ import streamlit as st
 # File paths
 file_path = 'Raw_eGRID_EF_1.xlsx'  # Update with the correct path if needed
 gwp_file_path = 'GWP.xlsx'
+scope_1_file_path = '/mnt/data/Scope_1_stationary_fuel.xlsx'
 
 # Load the data
 df = pd.read_excel(file_path, engine='openpyxl')
 gwp_df = pd.read_excel(gwp_file_path)
+scope_1_df = pd.read_excel(scope_1_file_path)
 
-# Conversion factors
-conversion_factors = {
+# Conversion factors for Scope 2
+conversion_factors_1 = {
     "mtCO2e/kWh": 4.53592e-7,
     "mtCO2e/MWh": 4.53592e-4,
     #"mtCO2e/lbs":,
@@ -20,9 +22,17 @@ conversion_factors = {
     #"kgCO2e/lbs": 
 }
 
+# Conversion factors for Scope 1
+conversion_factors_2 = {
+    "mtCO2e/therms": 1.0e-4,
+    "mtCO2e/mmBTU": 1.0e-3,
+    "kgCO2e/therms": 0.1,
+    "kgCO2e/mmBTU": 1
+}
+
 # Streamlit app
 st.title("Emission Factor Tool")
-st.title("**Location based**")
+st.title("**Scope 2, Location based**")
 
 # User input: Select eGRID region
 acronym_input = st.selectbox("Select an eGRID Subregion Acronym", df['eGRID Subregion Acronym'].unique())
@@ -55,17 +65,17 @@ def get_gwp_values(column):
     }
     return gwp_values
 
-# Function to convert raw factors to chosen unit
-def convert_to_unit(co2, ch4, n2o, gwp_values, unit):
-    conversion_factor = conversion_factors[unit]
+# Function to convert raw factors to chosen unit for Scope 2
+def convert_to_unit_scope_2(co2, ch4, n2o, gwp_values, unit):
+    conversion_factor = conversion_factors_1[unit]
     co2_converted = co2 * conversion_factor * gwp_values['CO2']
     ch4_converted = ch4 * conversion_factor * gwp_values['CH4']
     n2o_converted = n2o * conversion_factor * gwp_values['N2O']
     total_converted = co2_converted + ch4_converted + n2o_converted
     return co2_converted, ch4_converted, n2o_converted, total_converted
 
-# Function to get emission factors, convert them, and display GWP values
-def get_emission_factors_and_convert(acronym, gwp_column, category, unit):
+# Function to get emission factors, convert them, and display GWP values for Scope 2
+def get_emission_factors_and_convert_scope_2(acronym, gwp_column, category, unit):
     result = get_emission_factors(acronym, category)
     if result is not None:
         co2 = result['CO2 Factor (lb / MWh)'].values[0]
@@ -76,7 +86,7 @@ def get_emission_factors_and_convert(acronym, gwp_column, category, unit):
         gwp_values = get_gwp_values(gwp_column)
         
         # Convert the emission factors to the selected unit
-        co2_converted, ch4_converted, n2o_converted, total_converted = convert_to_unit(co2, ch4, n2o, gwp_values, unit)
+        co2_converted, ch4_converted, n2o_converted, total_converted = convert_to_unit_scope_2(co2, ch4, n2o, gwp_values, unit)
         
         return {
             'Raw CO2 (lb/MWh)': co2,
@@ -94,9 +104,9 @@ def get_emission_factors_and_convert(acronym, gwp_column, category, unit):
     else:
         return "Acronym not found!"
 
-# When the user clicks the button, run the calculation and display results
-if st.button("Calculate Emission Factors"):
-    factors_converted = get_emission_factors_and_convert(acronym_input, gwp_column, ef_category, output_unit)
+# When the user clicks the button, run the calculation and display results for Scope 2
+if st.button("Calculate Emission Factors for Scope 2"):
+    factors_converted = get_emission_factors_and_convert_scope_2(acronym_input, gwp_column, ef_category, output_unit)
     
     if isinstance(factors_converted, dict):
         st.write("### Raw Emission Factors (lb/MWh):")
@@ -138,3 +148,80 @@ if st.button("Calculate Emission Factors"):
         
     else:
         st.write(factors_converted)
+
+        #------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Scope 1 Section - Stationary Combustion
+st.title("**Scope 1, Stationary Combustion**")
+
+# User input: Select fuel type
+fuel_type = st.selectbox("Select Fuel Type", scope_1_df['Unnamed: 1'][2:].unique())
+
+# User input: Select output units (kgCO2, mtCO2)
+scope_1_output_unit = st.selectbox("Select Output Unit", ["kgCO2", "mtCO2", "kgCO2e/therms", "mtCO2e/therms", "kgCO2e/mmBTU", "mtCO2e/mmBTU"])
+
+# Function to get emission factors for selected fuel type
+def get_scope_1_emission_factors(fuel):
+    result = scope_1_df[scope_1_df['Unnamed: 1'] == fuel].iloc[0]
+    co2_factor = float(result['Unnamed: 2'])  # CO2 Factor (kg/mmBtu)
+    ch4_factor = float(result['Unnamed: 3'])  # CH4 Factor (g/mmBtu)
+    n2o_factor = float(result['Unnamed: 4'])  # N2O Factor (g/mmBtu)
+    return co2_factor, ch4_factor, n2o_factor
+
+# Function to convert units for Scope 1 emissions
+def convert_scope_1_units(co2_factor, ch4_factor, n2o_factor, gwp_values, unit):
+    conversion_factor = conversion_factors_2[unit]
+    co2_converted = co2_factor * conversion_factor * gwp_values['CO2']
+    ch4_converted = ch4_factor * conversion_factor * gwp_values['CH4']
+    n2o_converted = n2o_factor * conversion_factor * gwp_values['N2O']
+    total_converted = co2_converted + ch4_converted + n2o_converted
+    return co2_converted, ch4_converted, n2o_converted, total_converted
+
+
+# Function to get emission factors, convert them, and display GWP values for Scope 2
+def get_emission_factors_and_convert_scope_2(acronym, gwp_column, category, unit):
+    result = get_emission_factors(acronym, category)
+    if result is not None:
+        co2 = result['CO2 Factor (kg / mmBTU)'].values[0]
+        ch4 = result['CH4 Factor (g / mmBTU)'].values[0]
+        n2o = result['N2O Factor (lb / mmBTU)'].values[0]
+        
+        # Get GWP values for the selected column
+        gwp_values = get_gwp_values(gwp_column)
+        
+        # Convert the emission factors to the selected unit
+        co2_converted, ch4_converted, n2o_converted, total_converted = convert_to_unit_scope_2(co2, ch4, n2o, gwp_values, unit)
+        
+        return {
+            'Raw CO2 (lb/MWh)': co2,
+            'Raw CH4 (lb/MWh)': ch4,
+            'Raw N2O (lb/MWh)': n2o,
+            #'EF Country': result['EF Country'].values[0],
+            #'EF Authority': result['EF Authority'].values[0],
+            #'EF Data Year': result['EF Data Year'].values[0],
+            #'EF Release Year': result['EF Release Year'],
+            'CO2 ({})'.format(unit): co2_converted,
+            'CH4 ({})'.format(unit): ch4_converted,
+            'N2O ({})'.format(unit): n2o_converted,
+            'Total CO2e ({})'.format(unit): total_converted
+        }
+    else:
+        return "Acronym not found!"
+
+# When the user clicks the button, calculate Scope 1 emissions
+if st.button("Calculate Scope 1 Emission Factors"):
+    co2, ch4, n2o = get_scope_1_emission_factors(fuel_type)
+    co2_converted, ch4_converted, n2o_converted = convert_scope_1_units(co2, ch4, n2o, scope_1_output_unit)
+    
+    # Display results
+    st.write("### Emission Factors for {}: ({})".format(fuel_type, scope_1_output_unit))
+    
+    scope_1_data = {
+        'Fuel Type': [fuel_type],
+        'CO2 ({})'.format(scope_1_output_unit): [f"{co2_converted:.4f}"],
+        'CH4 ({})'.format(scope_1_output_unit): [f"{ch4_converted:.6f}"],
+        'N2O ({})'.format(scope_1_output_unit): [f"{n2o_converted:.6f}"]
+    }
+    
+    df_scope_1 = pd.DataFrame(scope_1_data)
+    st.table(df_scope_1)
