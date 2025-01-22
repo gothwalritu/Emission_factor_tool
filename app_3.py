@@ -22,7 +22,7 @@ conversion_factors = {
 
 # Streamlit app
 st.title("Emission Factor Tool")
-st.title("**Location based**")
+st.title("**Scope 2, Location based**")
 
 # User input: Select eGRID region
 acronym_input = st.selectbox("Select an eGRID Subregion Acronym", df['eGRID Subregion Acronym'].unique())

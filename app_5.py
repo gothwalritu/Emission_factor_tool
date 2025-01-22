@@ -22,7 +22,6 @@ conversion_factors_1 = {
     #"kgCO2e/lbs": 
 }
 
-# Conversion factors
 conversion_factors_2 = {
     "mtCO2e/therms": 1.0e-4,
     "mtCO2e/mmBTU": 1.0e-3,
@@ -186,6 +185,9 @@ def convert_scope_1_units(co2, ch4, n2o, gwp_values, unit):
     n2o_converted = n2o * conversion_factor * gwp_values['N2O']
     total_converted = co2_converted + ch4_converted + n2o_converted
     return co2_converted, ch4_converted, n2o_converted, total_converted
+
+
+
 
 # Function to get emission factors, convert them, and display GWP values
 if st.button("Calculate Scope 1 Emission Factors"):

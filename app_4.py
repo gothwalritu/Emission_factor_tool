@@ -178,8 +178,8 @@ def convert_scope_1_units(co2_factor, ch4_factor, n2o_factor, gwp_values, unit):
     return co2_converted, ch4_converted, n2o_converted, total_converted
 
 
-# Function to get emission factors, convert them, and display GWP values for Scope 2
-def get_emission_factors_and_convert_scope_2(acronym, gwp_column, category, unit):
+# Function to get emission factors, convert them, and display GWP values for Scope 1
+def get_emission_factors_and_convert_scope_1(acronym, gwp_column, category, unit):
     result = get_emission_factors(acronym, category)
     if result is not None:
         co2 = result['CO2 Factor (kg / mmBTU)'].values[0]
