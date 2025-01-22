@@ -69,8 +69,8 @@ scope_1_output_unit = st.selectbox("Select Output Unit", ["mtCO2e/therms", "mtCO
 def get_scope_1_emission_factors(fuel):
     result = scope_1_df[scope_1_df['Unnamed: 1'] == fuel].iloc[0]
     co2_factor = float(result['Unnamed: 2'])  # CO2 Factor (kg/mmBtu)
-    ch4_factor = float(result['Unnamed: 3'])  # CH4 Factor (kg/mmBtu)
-    n2o_factor = float(result['Unnamed: 4'])  # N2O Factor (kg/mmBtu)
+    ch4_factor = float(result['Unnamed: 3'])*0.001  # CH4 Factor (kg/mmBtu)
+    n2o_factor = float(result['Unnamed: 4'])*0.001  # N2O Factor (kg/mmBtu)
     ef_country = result['Unnamed: 5']  # EF Country
     ef_authority = result['Unnamed: 6']  # EF Authority
     ef_data_year = result['Unnamed: 7']  # EF Data Year
