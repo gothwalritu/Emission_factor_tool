@@ -114,7 +114,7 @@ if st.button("Calculate Scope 1 Emission Factors"):
     
     scope_1_data = {
         'Fuel Type': [fuel_type],
-        'CO2 ({})'.format(scope_1_output_unit): [f"{co2_converted:.4f}"],
+        'CO2 ({})'.format(scope_1_output_unit): [f"{co2_converted:.7f}"],
         'CH4 ({})'.format(scope_1_output_unit): [f"{ch4_converted:.7f}"],
         'N2O ({})'.format(scope_1_output_unit): [f"{n2o_converted:.7f}"],
         'Total CO2e ({})'.format(scope_1_output_unit): [f"{total_converted:.7f}"]
@@ -212,10 +212,10 @@ if st.button("Calculate Emission Factors"):
         converted_data = {
             'Emission Source': ['Electricity'],
             'eGRID': [acronym_input],
-            'CO2 ({})'.format(output_unit): [f"{factors_converted['CO2 ({})'.format(output_unit)]:.10f}"],
-            'CH4 ({})'.format(output_unit): [f"{factors_converted['CH4 ({})'.format(output_unit)]:.10f}"],
-            'N2O ({})'.format(output_unit): [f"{factors_converted['N2O ({})'.format(output_unit)]:.10f}"],
-            'Total CO2e ({})'.format(output_unit): [f"{factors_converted['Total CO2e ({})'.format(output_unit)]:.10f}"]
+            'CO2 ({})'.format(output_unit): [f"{factors_converted['CO2 ({})'.format(output_unit)]:.9f}"],
+            'CH4 ({})'.format(output_unit): [f"{factors_converted['CH4 ({})'.format(output_unit)]:.9f}"],
+            'N2O ({})'.format(output_unit): [f"{factors_converted['N2O ({})'.format(output_unit)]:.9f}"],
+            'Total CO2e ({})'.format(output_unit): [f"{factors_converted['Total CO2e ({})'.format(output_unit)]:.9f}"]
         }
         
         df_converted = pd.DataFrame(converted_data)
