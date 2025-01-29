@@ -33,7 +33,11 @@ st.title("Emission Factor Tool")
 
 
 # User input: Select GWP column (SAR, AR5, AR6)
-gwp_column = st.selectbox("Select GWP Column (AR5, AR4, SAR)", ['AR5', 'AR4',  'SAR'])
+st.markdown(
+    'Select GWP Column (AR6, AR5, AR4, SAR) <span title="Global Warming Potential (GWP) measures the relative impact of greenhouse gases compared to CO2.">ℹ️</span>',
+    unsafe_allow_html=True
+)
+gwp_column = st.selectbox("", ['AR6','AR5', 'AR4', 'SAR'])
 
 
 
@@ -131,9 +135,21 @@ if st.button("Calculate Scope 1 Emission Factors"):
 
 st.title("**Scope 2, Location based**")
 
+#st.markdown(
+    #'## Scope 2, Location based <span title="It represents the average greenhouse gas (GHG) emissions intensity from the consumption of purchased electricity, steam, heating, and cooling.">ℹ️</span>',
+    #unsafe_allow_html=True
+#)
+
 
 # User input: Select eGRID region
-acronym_input = st.selectbox("Select an eGRID Subregion Acronym", df['eGRID Subregion Acronym'].unique())
+st.markdown(
+    'Select an eGRID Subregion Acronym '
+    '<a href="https://www.epa.gov/egrid/power-profiler#/" target="_blank" title="Learn more about eGRID Subregions on EPA\'s Power Profiler website.">ℹ️</a>',
+    unsafe_allow_html=True
+)
+acronym_input = st.selectbox("", df['eGRID Subregion Acronym'].unique())
+
+
 
 
 # User input: Select EF Category (Total Output Emission Factors or Non-Baseload Emission Factors)
@@ -230,4 +246,5 @@ if st.button("Calculate Emission Factors"):
         st.write(factors_converted)
 
 #####-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
