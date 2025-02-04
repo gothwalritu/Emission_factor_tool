@@ -3,10 +3,10 @@ import pandas as pd
 import streamlit as st
 
 # File path
-market_file_path = 'EEI_UtilityCO2EmissionsDatabase June 2023_copy.xlsx'
+market_file_path = 'EEI_clean.csv'
 
 # Load the data
-df_market = pd.read_excel(market_file_path, engine='openpyxl')
+df_market = pd.read_csv(market_file_path, engine='openpyxl')
 
 # Conversion factors
 conversion_factors_1 = {

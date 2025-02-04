@@ -250,15 +250,11 @@ if st.button("Calculate Emission Factors"):
 
 
 
-
 # File path
 market_file_path = 'EEI_clean.csv'
 
 # Load the data
 df_market = pd.read_csv(market_file_path)
-
-# Drop the last column
-#df_market = df_market.iloc[:, :-1]
 
 # Clean the column names to avoid issues
 df_market.columns = df_market.columns.str.strip().str.lower()
@@ -268,6 +264,9 @@ df_market.columns = [
     'company_name', 'state', 'data_year', 'utility_specific_residual_mix_emission_rate',
     'utility_avg_emission_rate', 'protocol', 'emissions_certified', 'emission_totals_intensity'
 ]
+
+# Convert 'data_year' column to integer format (remove decimals)
+df_market['data_year'] = pd.to_numeric(df_market['data_year'], errors='coerce').fillna(0).astype(int)
 
 # Streamlit app
 st.title("**Scope 2, Market based**")
@@ -295,6 +294,10 @@ if not final_filtered_data.empty:
     utility_avg_emission_rate = final_filtered_data['utility_avg_emission_rate'].values[0]
     protocol = final_filtered_data['protocol'].values[0]
     emissions_certified = final_filtered_data['emissions_certified'].values[0]
+
+    # Handle null or blank values
+    if pd.isna(utility_avg_emission_rate) or utility_avg_emission_rate == "":
+        utility_avg_emission_rate = "no value"
 else:
     st.error("No data available for the selected criteria.")
 
@@ -311,21 +314,22 @@ conversion_factors_1 = {
 
 # Function to convert emission rate to chosen unit
 def convert_emission_rate(emission_rate, unit):
+    if emission_rate == "no value":
+        return "no value"
     conversion_factor = conversion_factors_1[unit]
-    emission_rate = float(emission_rate)  
-    converted_emission_rate = emission_rate * conversion_factor
-    return converted_emission_rate
+    converted_emission_rate = float(emission_rate) * conversion_factor
+    return f"{converted_emission_rate:.10f}"
 
 # When the user clicks the button, run the calculation and display results
 if st.button("Calculate Emission Factors Scope 2"):
     converted_emission_rate = convert_emission_rate(utility_avg_emission_rate, output_unit)
     
-    # Display input data
+    # Display input data with formatted Data Year
     st.write("### Input Data:")
     input_data = {
         'Company Name': [company_name_input],
         'State': [state_input],
-        'Data Year': [data_year_input],
+        'Data Year': [str(data_year_input)],  # Convert year to string for proper formatting
         'Utility Average Emission Rate (lbs CO2/MWh)': [utility_avg_emission_rate],
         'Protocol': [protocol],
         'Emissions Certified': [emissions_certified]
@@ -338,10 +342,10 @@ if st.button("Calculate Emission Factors Scope 2"):
     converted_data = {
         'Emission Source': ['Electricity'],
         'eGRID': [company_name_input],
-        'CO2 ({})'.format(output_unit): [f"{converted_emission_rate:.10f}"],
+        'CO2 ({})'.format(output_unit): [converted_emission_rate],
         'CH4 ({})'.format(output_unit): ["0.0000000000"],  # Placeholder values as no CH4 data provided
         'N2O ({})'.format(output_unit): ["0.0000000000"],  # Placeholder values as no N2O data provided
-        'Total CO2e ({})'.format(output_unit): [f"{converted_emission_rate:.10f}"]
+        'Total CO2e ({})'.format(output_unit): [converted_emission_rate]
     }
     df_converted = pd.DataFrame(converted_data)
     st.table(df_converted)
