@@ -3,13 +3,21 @@
 import pandas as pd
 import streamlit as st
 
-# File paths
-file_path = 'Raw_eGRID_EF_1.xlsx'  # Update with the correct path if needed
+# Define year-to-file mapping for Scope 2 data
+year_files = {
+    '2025': 'Raw_eGRID_EF_2025.xlsx',
+    '2024': 'Raw_eGRID_EF_2024.xlsx',
+    '2023': 'Raw_eGRID_EF_2023.xlsx',
+    '2022': 'Raw_eGRID_EF_2022.xlsx',
+    '2021': 'Raw_eGRID_EF_2021.xlsx',
+    '2020': 'Raw_eGRID_EF_2020.xlsx'
+}
+
 gwp_file_path = 'GWP.xlsx'
 scope_1_file_path = 'Scope_1_stationary_fuel.xlsx'
 
-# Load the data
-df = pd.read_excel(file_path, engine='openpyxl')
+
+
 gwp_df = pd.read_excel(gwp_file_path)
 scope_1_df = pd.read_excel(scope_1_file_path)
 
@@ -32,10 +40,19 @@ conversion_factors_2 = {
 st.title("Emission Factor Tool")
 
 
+st.markdown(
+    'Date of Last Update: 04/20/2025<br><br><br>',
+    unsafe_allow_html=True
+)
 
 # User input: Select GWP column (SAR, AR5, AR6)
 st.markdown(
-    'Select GWP Column (AR6, AR5, AR4, SAR) <span title="Global Warming Potential (GWP) measures the relative impact of greenhouse gases compared to CO2.">ℹ️</span>',
+    '<b>Select GWP Column (AR6, AR5, AR4, SAR)</b><br><br>'
+    '<b>i. What is GWP:</b> Global Warming Potential (GWP) measures the relative impact of greenhouse gases compared to CO2.<br>'
+    '<b>ii. Tool Default:</b> The tool defaults to the most recent Intergovernmental Panel on Climate Change (IPCC) values (currently AR6).<br>'
+    '<b>iii. Best Practice:</b> Use the most recent GWPs available unless: Your client has an existing target using an earlier GWP set (e.g., AR4 or AR5), or You are aligning with a legacy inventory.<br>'
+    '<b>iv. Not sure what to use?</b> '
+    '<span title="1. Check the previous GHG Inventory submission.&#10;2. Ask your client directly.&#10;3. When in doubt, default to AR6 and flag the assumption">ℹ️</span>',
     unsafe_allow_html=True
 )
 gwp_column = st.selectbox("", ['AR6','AR5', 'AR4', 'SAR'])
@@ -44,6 +61,11 @@ gwp_column = st.selectbox("", ['AR6','AR5', 'AR4', 'SAR'])
 
 # Scope 1 Section - Stationary Combustion
 st.title("**Scope 1, Stationary Combustion**")
+
+st.markdown(
+    'Definition: Direct emissions from owned or controlled sources (e.g., combustion of natural gas or fuels).',
+    unsafe_allow_html=True
+)
 
 # Function to get emission factors based on eGRID Acronym input and EF Category
 def get_emission_factors(acronym, category):
@@ -134,18 +156,62 @@ if st.button("Calculate Scope 1 Emission Factors"):
 
 ##---------------------------------------------------------------------------------------------------------------------
 
-st.title("**Scope 2, Location based**")
+st.title("**Scope 2, Location-based**")
+  
+st.markdown(
+    'Definition: Emissions from purchased electricity using average grid emission factors for the region.',
+    unsafe_allow_html=True
+)
 
 
+# User input: Select GWP column (SAR, AR5, AR6)
+st.markdown(
+    '<b>a. EF Category Guidance:</b><br>'
+    'Use the "Total Output Emission Factor" as the default.<br>'
+    'Only use the Non-Baseload Emission Factor if:<br>'
+    ' - The organization purchases electricity based on time-of-day pricing, or<br>'
+    ' - There is a clear reason to exclude baseload generation (e.g., demand response program or peak-time-specific procurement).<br>'
+    'b. Be sure to document the rationale for choosing a non-default value.',
+    unsafe_allow_html=True
+)
+
+
+
+# ---------- INFOGRAPHIC-STYLE LABEL ----------
+st.markdown(
+    '<p style="margin-bottom:2px; font-weight:600;">'
+    'Select Data Year '
+    '<span title="What is the Data Year?&#10;'
+    'The &#34;data year&#34; refers to the underlying year the factor represents, '
+    'not the year of publication.&#10;&#10;'
+    'Always cite the:&#10;'
+    '• Source (e.g., EPA, DEFRA)&#10;'
+    '• Publication date&#10;'
+    '• Table number&#10;'
+    '• Version history if applicable&#10;&#10;'
+    'Example:&#10;'
+    'The EPA 2024 Emission Factors Hub, published in June 2024, reflects emission data '
+    'from calendar year 2022-2023.&#10;'
+    'EPA Hub: https://www.epa.gov/climateleadership/ghg-emission-factors-hub">'
+    'ℹ️</span>'
+    '</p>',
+    unsafe_allow_html=True
+)
+
+data_year_selected = st.selectbox("",list(year_files.keys()))
+
+
+# Load data based on year selection
+df = pd.read_excel(year_files[data_year_selected], engine='openpyxl')
 
 # User input: Select eGRID region
 st.markdown(
+    '<p style="margin-bottom:2px; font-weight:600;">'
     'Select an eGRID Subregion Acronym '
     '<a href="https://www.epa.gov/egrid/power-profiler#/" target="_blank" title="Learn more about eGRID Subregions on EPA\'s Power Profiler website.">ℹ️</a>',
     unsafe_allow_html=True
 )
 acronym_input = st.selectbox("", df['eGRID Subregion Acronym'].unique())
-
 
 
 
@@ -277,6 +343,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+st.markdown(
+    'Definition: Emissions from purchased electricity using contractual instruments (e.g., RECs, supplier-specific data).<br>Best Practice: Apply both Location-Based and Market-Based Scope 2 calculations for dual reporting, per GHG Protocol guidance.',
+    unsafe_allow_html=True
+)
 
 # User input: Select State (sorted alphabetically)
 state_input = st.selectbox("Select a State", sorted_states)
