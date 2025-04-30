@@ -5,12 +5,12 @@ import streamlit as st
 
 # Define year-to-file mapping for Scope 2 data
 year_files = {
-    '2025': 'Raw_eGRID_EF_2025.xlsx',
-    '2024': 'Raw_eGRID_EF_2024.xlsx',
-    '2023': 'Raw_eGRID_EF_2023.xlsx',
-    '2022': 'Raw_eGRID_EF_2022.xlsx',
-    '2021': 'Raw_eGRID_EF_2021.xlsx',
-    '2020': 'Raw_eGRID_EF_2020.xlsx'
+    '2023': 'Raw_eGRID_EF_2025.xlsx',
+    '2022': 'Raw_eGRID_EF_2024.xlsx',
+    '2021': 'Raw_eGRID_EF_2023.xlsx',
+    '2020': 'Raw_eGRID_EF_2022.xlsx',
+    '2019': 'Raw_eGRID_EF_2021.xlsx',
+    '2018': 'Raw_eGRID_EF_2020.xlsx'
 }
 
 gwp_file_path = 'GWP.xlsx'
