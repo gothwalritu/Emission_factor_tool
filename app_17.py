@@ -40,18 +40,32 @@ conversion_factors_2 = {
 st.title("Emission Factor Tool")
 
 
+st.markdown(
+    'Date of Last Update: 04/20/2025<br><br><br>',
+    unsafe_allow_html=True
+)
 
 # User input: Select GWP column (SAR, AR5, AR6)
 st.markdown(
-    'Select GWP Column (AR6, AR5, AR4, SAR)  ',
+    '<b>Select GWP Column (AR6, AR5, AR4, SAR)</b><br><br>'
+    '<b>i. What is GWP:</b> Global Warming Potential (GWP) measures the relative impact of greenhouse gases compared to CO2.<br>'
+    '<b>ii. Tool Default:</b> The tool defaults to the most recent Intergovernmental Panel on Climate Change (IPCC) values (currently AR6).<br>'
+    '<b>iii. Best Practice:</b> Use the most recent GWPs available unless: Your client has an existing target using an earlier GWP set (e.g., AR4 or AR5), or You are aligning with a legacy inventory.<br>'
+    '<b>iv. Not sure what to use?</b> '
+    '<span title="1. Check the previous GHG Inventory submission.&#10;2. Ask your client directly.&#10;3. When in doubt, default to AR6 and flag the assumption">ℹ️</span>',
     unsafe_allow_html=True
 )
 gwp_column = st.selectbox("", ['AR6','AR5', 'AR4', 'SAR'])
 
-
+#--------------------------------------------------------------------------------------------------------------------------------
 
 # Scope 1 Section - Stationary Combustion
 st.title("**Scope 1, Stationary Combustion**")
+
+st.markdown(
+    'Definition: Direct emissions from owned or controlled sources (e.g., combustion of natural gas or fuels).',
+    unsafe_allow_html=True
+)
 
 # Function to get emission factors based on eGRID Acronym input and EF Category
 def get_emission_factors(acronym, category):
@@ -63,7 +77,11 @@ def get_emission_factors(acronym, category):
     else:
         return None
 
-# Function to extract relevant GWP values based on the selected column
+# Load and clean Scope 1 data
+#scope_1_df = pd.read_excel(scope_1_file_path)
+#scope_1_df.columns = scope_1_df.columns.str.strip()  # Remove extra whitespace from headers
+
+# Extract GWP values
 def get_gwp_values(column):
     gwp_values = {
         'CO2': gwp_df[gwp_df['Global Warming Potential'] == 'CO2'][column].values[0],
@@ -72,44 +90,50 @@ def get_gwp_values(column):
     }
     return gwp_values
 
-# User input: Select fuel type
-fuel_type = st.selectbox("Select Fuel Type", scope_1_df['Unnamed: 1'][2:].unique())
+# User input: EF Data Year
+ef_years = sorted(scope_1_df['EF Data Year'].dropna().unique(), reverse=True)
+selected_ef_year = st.selectbox("Select EF Data Year", ef_years)
 
-# User input: Select output units (kgCO2, mtCO2)
-scope_1_output_unit = st.selectbox("Select Output Unit for scope 1", ["mtCO2e/therms", "mtCO2e/mmBTU","kgCO2e/therms","kgCO2e/mmBTU"])
+# Filter by selected year
+scope_1_df_filtered = scope_1_df[scope_1_df['EF Data Year'] == selected_ef_year]
 
-# Function to get emission factors for selected fuel type
+# User input: Fuel Type
+fuel_type = st.selectbox("Select Fuel Type", scope_1_df_filtered['Stationary  combustion fuel'].dropna().unique())
+
+# User input: Output unit
+scope_1_output_unit = st.selectbox("Select Output Unit for scope 1", ["mtCO2e/therms", "mtCO2e/mmBTU", "kgCO2e/therms", "kgCO2e/mmBTU"])
+
+# Get emission factors for selected fuel
 def get_scope_1_emission_factors(fuel):
-    result = scope_1_df[scope_1_df['Unnamed: 1'] == fuel].iloc[0]
-    co2_factor = float(result['Unnamed: 2'])  # CO2 Factor (kg/mmBtu)
-    ch4_factor = float(result['Unnamed: 3'])  # CH4 Factor (g/mmBtu)
-    n2o_factor = float(result['Unnamed: 4'])  # N2O Factor (g/mmBtu)
-    ef_country = result['Unnamed: 5']  # EF Country
-    ef_authority = result['Unnamed: 6']  # EF Authority
-    ef_data_year = result['Unnamed: 7']  # EF Data Year
-    ef_release_year = result['Unnamed: 8']  # EF Release Year
-    ef_combustion_type = result['Unnamed: 9'] # EF Combustion type
+    result = scope_1_df_filtered[scope_1_df_filtered['Stationary  combustion fuel'] == fuel].iloc[0]
+    co2_factor = float(result['CO2 Factor (kg/ mmBtu)'])
+    ch4_factor = float(result['CH4 Factor (g/ mmBtu)'])
+    n2o_factor = float(result['N2O Factor (g / mmBtu)'])
+    ef_country = result['EF Country']
+    ef_authority = result['EF Authority']
+    ef_data_year = result['EF Data Year']
+    ef_release_year = result['EF Release Year']
+    ef_combustion_type = result['Combustion Type']
     return co2_factor, ch4_factor, n2o_factor, ef_country, ef_authority, ef_data_year, ef_release_year, ef_combustion_type
 
-# Function to convert raw factors to chosen unit
+# Convert factors to selected unit
 def convert_scope_1_units(co2, ch4, n2o, gwp_values, unit):
     conversion_factor = conversion_factors_2[unit]
     co2_converted = co2 * conversion_factor * gwp_values['CO2']
-    ch4_converted = ch4 * conversion_factor * gwp_values['CH4']*0.001
-    n2o_converted = n2o * conversion_factor * gwp_values['N2O']*0.001
+    ch4_converted = ch4 * conversion_factor * gwp_values['CH4'] * 0.001
+    n2o_converted = n2o * conversion_factor * gwp_values['N2O'] * 0.001
     total_converted = co2_converted + ch4_converted + n2o_converted
     return co2_converted, ch4_converted, n2o_converted, total_converted
 
-# When the user clicks the button, calculate Scope 1 emissions
+# Calculate and display
 if st.button("Calculate Scope 1 Emission Factors"):
     co2, ch4, n2o, ef_country, ef_authority, ef_data_year, ef_release_year, ef_combustion_type = get_scope_1_emission_factors(fuel_type)
     gwp_values = get_gwp_values(gwp_column)
     co2_converted, ch4_converted, n2o_converted, total_converted = convert_scope_1_units(co2, ch4, n2o, gwp_values, scope_1_output_unit)
-    
-    # Display raw emission factors
+
+    # Display raw
     st.write("### Raw Emission Factors (kg/mmBtu):")
-    
-    raw_data_scope_1 = {
+    df_raw = pd.DataFrame({
         'Fuel Type': [fuel_type],
         'Raw CO2 (kg/mmBtu)': [f"{co2:.2f}"],
         'Raw CH4 (g/mmBtu)': [f"{ch4:.2f}"],
@@ -119,45 +143,80 @@ if st.button("Calculate Scope 1 Emission Factors"):
         'EF Data Year': [ef_data_year],
         'EF Release Year': [ef_release_year],
         'Combustion Type': [ef_combustion_type]
-    }
-    
-    df_raw_scope_1 = pd.DataFrame(raw_data_scope_1)
-    st.table(df_raw_scope_1)
-    
-    # Display converted emission factors
-    st.write("### Converted Emission Factors ({})".format(scope_1_output_unit))
-    
-    scope_1_data = {
+    })
+    st.table(df_raw)
+
+    # Display converted
+    st.write(f"### Converted Emission Factors ({scope_1_output_unit})")
+    df_converted = pd.DataFrame({
         'Fuel Type': [fuel_type],
-        'CO2 ({})'.format(scope_1_output_unit): [f"{co2_converted:.7f}"],
-        'CH4 ({})'.format(scope_1_output_unit): [f"{ch4_converted:.7f}"],
-        'N2O ({})'.format(scope_1_output_unit): [f"{n2o_converted:.7f}"],
-        'Total CO2e ({})'.format(scope_1_output_unit): [f"{total_converted:.7f}"]
-    }
-    
-    df_scope_1 = pd.DataFrame(scope_1_data)
-    st.table(df_scope_1)
+        f'CO2 ({scope_1_output_unit})': [f"{co2_converted:.7f}"],
+        f'CH4 ({scope_1_output_unit})': [f"{ch4_converted:.7f}"],
+        f'N2O ({scope_1_output_unit})': [f"{n2o_converted:.7f}"],
+        f'Total CO2e ({scope_1_output_unit})': [f"{total_converted:.7f}"]
+    })
+    st.table(df_converted)
 
 
 
 ##---------------------------------------------------------------------------------------------------------------------
 
 st.title("**Scope 2, Location-based**")
+  
+st.markdown(
+    'Definition: Emissions from purchased electricity using average grid emission factors for the region.',
+    unsafe_allow_html=True
+)
 
-# User input: Select Data Year
-data_year_selected = st.selectbox("Select Data Year", list(year_files.keys()))
+
+# User input: Select GWP column (SAR, AR5, AR6)
+st.markdown(
+    '<b>a. EF Category Guidance:</b><br>'
+    'Use the "Total Output Emission Factor" as the default.<br>'
+    'Only use the Non-Baseload Emission Factor if:<br>'
+    ' - The organization purchases electricity based on time-of-day pricing, or<br>'
+    ' - There is a clear reason to exclude baseload generation (e.g., demand response program or peak-time-specific procurement).<br>'
+    'b. Be sure to document the rationale for choosing a non-default value.',
+    unsafe_allow_html=True
+)
+
+
+
+# ---------- INFOGRAPHIC-STYLE LABEL ----------
+st.markdown(
+    '<p style="margin-bottom:2px; font-weight:600;">'
+    'Select Data Year '
+    '<span title="What is the Data Year?&#10;'
+    'The &#34;data year&#34; refers to the underlying year the factor represents, '
+    'not the year of publication.&#10;&#10;'
+    'Always cite the:&#10;'
+    '• Source (e.g., EPA, DEFRA)&#10;'
+    '• Publication date&#10;'
+    '• Table number&#10;'
+    '• Version history if applicable&#10;&#10;'
+    'Example:&#10;'
+    'The EPA 2024 Emission Factors Hub, published in June 2024, reflects emission data '
+    'from calendar year 2022-2023.&#10;'
+    'EPA Hub: https://www.epa.gov/climateleadership/ghg-emission-factors-hub">'
+    'ℹ️</span>'
+    '</p>',
+    unsafe_allow_html=True
+)
+
+data_year_selected = st.selectbox("",list(year_files.keys()))
+
 
 # Load data based on year selection
 df = pd.read_excel(year_files[data_year_selected], engine='openpyxl')
 
 # User input: Select eGRID region
 st.markdown(
+    '<p style="margin-bottom:2px; font-weight:600;">'
     'Select an eGRID Subregion Acronym '
     '<a href="https://www.epa.gov/egrid/power-profiler#/" target="_blank" title="Learn more about eGRID Subregions on EPA\'s Power Profiler website.">ℹ️</a>',
     unsafe_allow_html=True
 )
 acronym_input = st.selectbox("", df['eGRID Subregion Acronym'].unique())
-
 
 
 
@@ -289,6 +348,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+st.markdown(
+    'Definition: Emissions from purchased electricity using contractual instruments (e.g., RECs, supplier-specific data).<br>Best Practice: Apply both Location-Based and Market-Based Scope 2 calculations for dual reporting, per GHG Protocol guidance.',
+    unsafe_allow_html=True
+)
 
 # User input: Select State (sorted alphabetically)
 state_input = st.selectbox("Select a State", sorted_states)
@@ -303,7 +366,9 @@ company_name_input = st.selectbox("Select a Company Name", filtered_state_data['
 filtered_company_data = filtered_state_data[filtered_state_data['company_name'] == company_name_input]
 
 # User input: Select Data Year
-data_year_input = st.selectbox("Select a Data Year", filtered_company_data['data_year'].unique())
+#data_year_input = st.selectbox("Select a Data Year", filtered_company_data['data_year'].unique())
+data_year_input = st.selectbox("Select a Data Year", sorted(filtered_company_data['data_year'].unique(), reverse=True))
+
 
 # Filter data based on selected Data Year
 final_filtered_data = filtered_company_data[filtered_company_data['data_year'] == data_year_input]
